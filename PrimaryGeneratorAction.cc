@@ -47,6 +47,18 @@ PrimaryGeneratorAction::PrimaryGeneratorAction(SteppingAction *STP)
 : G4VUserPrimaryGeneratorAction(),
   fParticleGun(0),stp(STP)
 {
+  xpos = new double[11000];
+  ypos = new double[11000];
+  weighting = new double[11000];
+  energy = new double[11000];
+  groupindex = new int[11000];
+  energygroup = new double[30];
+  calE = new double[30];
+  delE = new double[30];
+  xstdd = new double[30];
+  ystdd = new double[30];
+  stdd = new double[30] ;
+  
   //**************SOBP**************
   FILE *fp = fopen("SOBPdata.txt","r") ;
   int counting=0 ; 
@@ -122,6 +134,20 @@ PrimaryGeneratorAction::PrimaryGeneratorAction(SteppingAction *STP)
   fParticleGun->SetParticleMomentumDirection(G4ThreeVector(0.,0.,1.));
   fParticleGun->SetParticlePosition(G4ThreeVector(0.,0.,-220*cm));
 
+  fGPS = new G4GeneralParticleSource();
+  fGPS->SetParticleDefinition(fproton);
+  fGPS->SetCurrentSourceIntensity(20000);
+  
+  fGPS->GetCurrentSource()->GetEneDist()->SetEnergyDisType("Gauss");
+  fGPS->GetCurrentSource()->GetEneDist()->SetMonoEnergy(100*MeV);
+  fGPS->GetCurrentSource()->GetEneDist()->SetBeamSigmaInE(5*MeV);
+  
+  fGPS->GetCurrentSource()->GetPosDist()->SetPosDisType("Point");
+  fGPS->GetCurrentSource()->GetPosDist()->SetCentreCoords(G4ThreeVector(0.,0.,-220*cm));
+
+  
+  //fGPS->GetCurrentSource()->GetAngDist()->SetAngDistType("user");
+  fGPS->GetCurrentSource()->GetAngDist()->SetParticleMomentumDirection(G4ThreeVector(0.,0.,1.));
   srand((unsigned)time(NULL)) ;
 }
 
@@ -130,31 +156,30 @@ PrimaryGeneratorAction::PrimaryGeneratorAction(SteppingAction *STP)
 PrimaryGeneratorAction::~PrimaryGeneratorAction()
 {
   delete fParticleGun;
+  delete fGPS;
+  delete fproton;
+  delete stp;
+  delete xpos ;
+  delete ypos;
+  delete weighting;
+  delete energy;
+  delete energygroup;
+  delete groupindex;
+  delete calE;
+  delete delE;
+  delete xstdd;
+  delete ystdd;
+  delete stdd;
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 void PrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent)
 {
-	
-  if(newcount % 5000 == 0){ 
-//	  index++;
-	  printf("No. %d ~ %d\n",newcount,newcount+4999) ;
-//	  printf("Now shooting index = %d | weighting = %lf | Energy = %lf MeV | Standard Deviation = %lf | Spot Size (%.2lfmm,%.2lfmm)\n"
-//	  ,index,weighting[index],energy[index],stdd[groupindex[index]],xstdd[groupindex[index]],ystdd[groupindex[index]]);
-  }
-  newcount++;
-  index = (int)(10641*G4RandFlat::shoot()) ;
-  stp->SetNowWeighting(weighting[index]);
-  Energy = G4RandGauss::shoot(energy[index],stdd[groupindex[index]]) ;
-  fParticleGun->SetParticleEnergy(Energy*MeV);
-  fParticleGun->SetParticleMomentumDirection(G4ThreeVector(xpos[index]/10.,ypos[index]/10.,215));
-  px=G4RandGauss::shoot(0,xstdd[groupindex[index]]);
-  py=G4RandGauss::shoot(0,ystdd[groupindex[index]]);
-  fParticleGun->SetParticlePosition(G4ThreeVector(px*mm,py*mm,(-20 - 200)*cm));
-  fParticleGun->SetParticlePosition(G4ThreeVector(0*mm,0*mm,(-20 - 200)*cm));
-  
-  fParticleGun->GeneratePrimaryVertex(anEvent);
+  px=G4RandGauss::shoot(0,1);
+  py=G4RandGauss::shoot(0,2);
+  fGPS->GetCurrentSource()->GetPosDist()->SetCentreCoords(G4ThreeVector(px*cm,py*cm,-220*cm));
+  fGPS->GeneratePrimaryVertex(anEvent);
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
